@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Web Novel Scraper | Build Your Private Library</title>
+  <meta name="description" content="Mirror any FreeWebNovel story inside your own fast reader. Paste a title, auto-generate chapters, and keep a personal library online.">
+  <meta name="robots" content="index,follow">
+  <meta name="theme-color" content="#0f172a">
+  <link rel="canonical" href="{{ absolute_url(request.path) }}">
+  <meta property="og:title" content="Web Novel Scraper">
+  <meta property="og:description" content="Scrape FreeWebNovel stories into your own responsive reader and keep them cached forever.">
+  <meta property="og:url" content="{{ absolute_url(request.path) }}">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="{{ absolute_url('/static/media/paragon.jpg') }}">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Web Novel Scraper">
+  <meta name="twitter:description" content="Host scraped FreeWebNovel chapters on your own site.">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="/static/css/style.css">
+  {% set parts = [] %}
+  {% for novel in novels %}
+    {% set _ = parts.append({
+      "@type": "Book",
+      "name": novel.title,
+      "url": absolute_url(url_for('novel_page', slug=novel.slug)),
+      "author": novel.author
+    }) %}
+  {% endfor %}
+  {% set collection_data = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    "name": "Web Novel Library",
+    "url": absolute_url(request.path),
+    "about": "Self-hosted mirror of FreeWebNovel titles",
+    "hasPart": parts
+  } %}
+  <script type="application/ld+json">{{ collection_data | tojson }}</script>
+</head>
+<body>
+  <h1>Novels</h1>
+  <section class="novel-add">
+    <form action="{{ url_for('add_novel') }}" method="post" class="novel-form">
+      <label for="novel_name">Generate pages from FreeWebNovel</label>
+      <div class="novel-form__row">
+        <input
+          type="text"
+          id="novel_name"
+          name="novel_name"
+          placeholder="Paragon Of Sin"
+          required
+        />
+        <button type="submit">Generate</button>
+      </div>
+      <p class="novel-hint">Enter the exact novel name, slug, or full FreeWebNovel URL.</p>
+    </form>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul class="flash-messages">
+          {% for category, message in messages %}
+            <li class="flash {{ category }}">{{ message }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+  </section>
+  <div class="novel-list">
+    {% for novel in novels %}
+      <div class="novel">
+        <a href="{{ url_for('novel_page', slug=novel.slug) }}">
+          <img src="{{ novel.cover }}" alt="{{ novel.title }}" loading="lazy" decoding="async">
+          <strong>{{ novel.title }}</strong>
+        </a>
+      </div>
+    {% endfor %}
+  </div>
+</body>
+</html>

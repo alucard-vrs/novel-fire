@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    {% set summary_plain = novel.summary | striptags %}
+    <title>{{ novel.title }} | Web Novel Reader</title>
+    <meta name="description" content="{{ summary_plain[:155] }}" />
+    <link rel="canonical" href="{{ absolute_url(request.path) }}" />
+    <meta property="og:title" content="{{ novel.title }}" />
+    <meta property="og:description" content="{{ summary_plain[:200] }}" />
+    <meta property="og:type" content="book" />
+    <meta property="og:url" content="{{ absolute_url(request.path) }}" />
+    <meta property="og:image" content="{{ absolute_url(novel.cover) }}" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="{{ novel.title }}" />
+    <meta name="twitter:description" content="{{ summary_plain[:200] }}" />
+    <meta name="twitter:image" content="{{ absolute_url(novel.cover) }}" />
+    <link rel="stylesheet" href="/static/css/novel.css" />
+    {% set book_data = {
+      "@context": "https://schema.org",
+      "@type": "Book",
+      "name": novel.title,
+      "url": absolute_url(request.path),
+      "author": novel.author,
+      "image": absolute_url(novel.cover),
+      "description": summary_plain,
+      "inLanguage": "en",
+      "numberOfPages": total_chapters,
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD",
+        "url": absolute_url(request.path)
+      }
+    } %}
+    <script type="application/ld+json">{{ book_data | tojson }}</script>
+  </head>
+  <body class="novel-page">
+    {% set first_group = grouped_chapters|first %}
+    {% set last_group = grouped_chapters|last %}
+    {% set total_chapters = novel.total_chapters or (last_group.end if last_group else 0) %}
+    {% set derived_tags = novel.get('tags') or (novel.slug.split('-') if novel.slug else []) %}
+
+    <header class="app-bar">
+      <a href="{{ url_for('homepage') }}" class="app-bar__icon" aria-label="Home">⌂</a>
+      <div class="app-bar__title">Detail</div>
+      <span class="app-bar__avatar">✶</span>
+    </header>
+
+    <main class="novel-shell">
+      <section class="card hero-card novel-hero">
+        <div class="hero-media">
+          <img src="{{ novel.cover }}" alt="{{ novel.title }}" loading="lazy" decoding="async">
+        </div>
+        <div class="hero-meta">
+          <span class="pill">{{ total_chapters }} Chapters</span>
+          <h1>{{ novel.title }}</h1>
+          <p class="hero-author">by {{ novel.author or 'Unknown' }}</p>
+
+          <div class="hero-meta__chips">
+            {% for tag in derived_tags[:5] %}
+            <span class="tag-chip">#{{ tag.replace('-', ' ')|replace('_', ' ')|title }}</span>
+            {% endfor %}
+          </div>
+
+          <div class="hero-buttons">
+            {% if first_group %}
+            <a
+              class="btn primary"
+              href="{{ url_for('read_group', slug=novel.slug, start_chap=first_group.start) }}"
+            >
+              Start Reading
+            </a>
+            {% endif %}
+            {% if novel.source_url %}
+            <a class="btn ghost" href="{{ novel.source_url }}" target="_blank" rel="noopener">
+              View Source
+            </a>
+            {% endif %}
+          </div>
+        </div>
+      </section>
+
+      <section class="stat-cards">
+        <article class="stat-card">
+          <span class="stat-label">Views</span>
+          <span class="stat-big">{{ (total_chapters * 500)|int }}</span>
+        </article>
+        <article class="stat-card">
+          <span class="stat-label">Status</span>
+          <span class="stat-big">{{ novel.get('status', 'On-going') }}</span>
+        </article>
+      </section>
+
+      {% if novel.summary %}
+      <section class="card synopsis" data-synopsis>
+        <div class="card-title">Synopsis</div>
+        <div class="novel-desc-para is-collapsed" data-synopsis-body>{{ novel.summary | safe }}</div>
+        <button class="synopsis-toggle" data-synopsis-toggle aria-expanded="false">More</button>
+      </section>
+      {% endif %}
+
+      {% set visible_groups = grouped_chapters[:8] %}
+      {% set extra_groups = grouped_chapters[8:] %}
+      <section class="card groups-card">
+        <div class="section-title">Grouped Chapters</div>
+        {% if grouped_chapters %}
+        <ul class="group-grid" data-group-grid>
+          {% for group in visible_groups %}
+          <li>
+            <a
+              class="group-card"
+              href="{{ url_for('read_group', slug=novel.slug, start_chap=group.start) }}"
+            >
+              <span>Range</span>
+              <strong>{{ group.start }} - {{ group.end }}</strong>
+            </a>
+          </li>
+          {% endfor %}
+        </ul>
+        {% if extra_groups %}
+        <ul class="group-grid group-grid--extra" data-group-extra hidden>
+          {% for group in extra_groups %}
+          <li>
+            <a
+              class="group-card"
+              href="{{ url_for('read_group', slug=novel.slug, start_chap=group.start) }}"
+            >
+              <span>Range</span>
+              <strong>{{ group.start }} - {{ group.end }}</strong>
+            </a>
+          </li>
+          {% endfor %}
+        </ul>
+        <button class="group-toggle" data-group-toggle aria-expanded="false">View all groups</button>
+        {% endif %}
+        {% else %}
+        <p class="empty-message">No chapter data yet. Try generating this novel again.</p>
+        {% endif %}
+      </section>
+
+      {% if first_group %}
+      <section class="card cta-card">
+        <div>
+          <p class="cta-card__label">Chapter {{ preview.chapter_number if preview else first_group.start }}</p>
+          <h3 class="cta-card__title">{{ preview.title if preview else ('Chapter ' ~ first_group.start) }}</h3>
+          {% if preview and preview.snippet %}
+          <p class="preview-snippet">{{ preview.snippet }}</p>
+          {% endif %}
+        </div>
+        <a
+          class="cta-card__button"
+          href="{{ url_for('read_group', slug=novel.slug, start_chap=first_group.start) }}"
+        >
+          Read Now
+        </a>
+      </section>
+      {% endif %}
+    </main>
+    <script src="{{ url_for('static', filename='js/novel.js') }}" defer></script>
+  </body>
+</html>

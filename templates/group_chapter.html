@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ novel.title }} — Chapters {{ start_chap }}-{{ end_chap }}</title>
+    <link rel="stylesheet" href="/static/css/chapter.css">
+  </head>
+  {% set total_count = novel.total_chapters or 1 %}
+  <body class="chapter-page controls-visible" data-theme="dark">
+    <header class="chapter-header">
+      <a class="back-link" href="{{ url_for('novel_page', slug=novel.slug) }}">← Back to {{ novel.title }}</a>
+    </header>
+
+    <main class="chapter-container">
+      <article class="chapter-card">
+        <h1 class="chapter-collection-title">{{ novel.title }}</h1>
+        <p class="chapter-collection-subtitle">Chapters {{ start_chap }} - {{ end_chap }}</p>
+      </article>
+
+      <article class="chapter-card chapter-stack" role="article" aria-label="Collected chapters {{ start_chap }} to {{ end_chap }}">
+        {% for chapter in chapters %}
+        <section class="chapter-section" id="chapter{{ loop.index }}">
+          <h2 class="chapter-title">{{ chapter.title }}</h2>
+          <div class="chapter-body">
+            {{ chapter.content | safe }}
+          </div>
+        </section>
+        {% endfor %}
+      </article>
+
+      <nav class="chapter-nav">
+        {% if prev_group %}
+        <a href="{{ url_for('read_group', slug=novel.slug, start_chap=prev_group) }}">← Previous group</a>
+        {% else %}
+        <a class="is-disabled" href="#">← Previous group</a>
+        {% endif %}
+
+        <a class="primary" href="{{ url_for('novel_page', slug=novel.slug) }}">Back to Index</a>
+
+        {% if next_group %}
+        <a href="{{ url_for('read_group', slug=novel.slug, start_chap=next_group) }}">Next group →</a>
+        {% else %}
+        <a class="is-disabled" href="#">Next group →</a>
+        {% endif %}
+      </nav>
+    </main>
+
+    <div
+      class="reader-overlay"
+      data-reader-panel
+      data-slug="{{ novel.slug }}"
+      data-total="{{ novel.total_chapters or 0 }}"
+      data-current="{{ start_chap }}"
+      data-group-size="{{ group_size }}"
+      data-prev-url="{{ url_for('read_group', slug=novel.slug, start_chap=prev_group) if prev_group else '' }}"
+      data-next-url="{{ url_for('read_group', slug=novel.slug, start_chap=next_group) if next_group else '' }}"
+    >
+      <div class="overlay-card" data-reader-overlay-card>
+        <div class="overlay-track">
+          <button type="button" class="track-arrow" data-track="prev">←</button>
+          <div class="track-center">
+            <div class="track-meta">
+              <span>Chapter <strong data-slider-value>{{ start_chap }}</strong></span>
+              <span class="track-progress" data-progress>{{ '%.1f' % ((start_chap / total_count) * 100 if total_count else 0) }}%</span>
+            </div>
+            <input type="range" min="1" max="{{ novel.total_chapters or 1 }}" value="{{ start_chap }}" data-chapter-slider>
+          </div>
+          <button type="button" class="track-arrow" data-track="next">→</button>
+        </div>
+        <div class="overlay-buttons">
+          <button type="button" class="overlay-btn" data-jump-btn aria-expanded="false">☰</button>
+          <button type="button" class="overlay-btn" data-theme-toggle>🌙</button>
+          <button type="button" class="overlay-btn" data-font-btn aria-expanded="false">Aa</button>
+        </div>
+      </div>
+      <div class="jump-panel" data-jump-panel hidden>
+        <div class="jump-panel__header">
+          <strong>All Chapters</strong>
+          <button type="button" data-jump-close>✕</button>
+        </div>
+        <div class="jump-panel__list" data-chapter-list></div>
+      </div>
+      <div class="font-panel" data-font-panel hidden>
+        <div class="font-panel__header">
+          <span>Font size</span>
+          <strong data-font-label>18px</strong>
+        </div>
+        <input type="range" min="16" max="26" step="1" value="18" data-font-slider>
+      </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/reader.js') }}" defer></script>
+  </body>
+</html>
