@@ -25,6 +25,7 @@ body {
 
 a {
   color: inherit;
+  text-decoration: none;
 }
 
 .app-bar {
@@ -37,7 +38,7 @@ a {
 }
 
 .app-bar__icon,
-.app-bar__avatar {
+.app-bar__cta {
   width: 44px;
   height: 44px;
   border-radius: 16px;
@@ -47,6 +48,17 @@ a {
   align-items: center;
   text-decoration: none;
   color: inherit;
+}
+
+.app-bar__cta {
+  padding: 0 16px;
+  width: auto;
+  min-width: 86px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: linear-gradient(120deg, #d2f8ff, #9fd8ff);
+  color: #0f172a;
 }
 
 .app-bar__title {
@@ -76,9 +88,18 @@ a {
   color: #eff3ff;
 }
 
-.novel-hero {
+.hero-row {
   display: grid;
-  gap: 26px;
+  grid-template-columns: 200px 1fr;
+  gap: 32px;
+  align-items: center;
+}
+
+.hero-extra {
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .hero-media {
@@ -162,37 +183,40 @@ a {
   letter-spacing: 0.08em;
 }
 
-.stat-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 16px;
-}
-
-.stat-card {
+.stat-badge {
   background: #fff;
-  border-radius: 24px;
-  padding: 18px;
+  border-radius: 32px;
   box-shadow: var(--shadow);
+  display: flex;
+  justify-content: space-between;
+  padding: 20px;
+  gap: 18px;
 }
 
-.stat-big {
+.stat-badge__item {
+  flex: 1;
+  text-align: center;
+}
+
+.stat-badge__label {
   display: block;
-  font-size: 24px;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.stat-badge__value {
+  display: block;
+  font-size: 22px;
   font-weight: 700;
   margin-top: 6px;
 }
 
-.stat-value {
-  font-size: 20px;
-  font-weight: 600;
-  display: block;
-  margin-top: 4px;
-}
-
 .hero-buttons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
+  display: none;
+  /* flex-wrap: wrap;
+  gap: 12px; */
 }
 
 .btn {
@@ -291,7 +315,7 @@ a {
 .group-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px 18px;
+  gap: 25px;
   padding: 0;
   list-style: none;
   margin: 0;
@@ -305,18 +329,7 @@ a {
   display: none;
 }
 
-.group-card {
-  border: 1px solid var(--soft);
-  border-radius: 18px;
-  padding: 18px;
-  transition: transform 0.15s ease, border-color 0.15s ease;
-  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-}
 
-.group-card:hover {
-  transform: translateY(-4px);
-  border-color: rgba(37, 99, 235, 0.4);
-}
 
 .cta-card {
   display: flex;
@@ -357,16 +370,6 @@ a {
   background: var(--accent-dark);
 }
 
-.group-card span {
-  display: block;
-  font-size: 14px;
-  color: var(--muted);
-}
-
-.group-card strong {
-  font-size: 20px;
-  margin-top: 4px;
-}
 
 .empty-message {
   color: var(--muted);
@@ -397,13 +400,10 @@ a {
     border-radius: 22px;
   }
 
-  .hero-meta {
-    text-align: center;
+  .hero-row {
+    display: flex;
+    gap: 18px;
     align-items: center;
-  }
-
-  .hero-card {
-    text-align: center;
   }
 
   .stat-list {
@@ -417,6 +417,7 @@ a {
   }
 
   .hero-buttons {
+    display: flex;
     flex-direction: column;
     width: 100%;
   }
@@ -441,18 +442,6 @@ a {
     width: 180px;
   }
 
-  .group-grid {
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  }
-
-  .group-card strong {
-    font-size: 18px;
-  }
-
-  .stat-cards {
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  }
-
   .cta-card {
     flex-direction: column;
     text-align: center;
@@ -461,5 +450,110 @@ a {
   .cta-card__button {
     width: 100%;
     text-align: center;
+  }
+}
+
+@media (max-width: 640px) {
+  body {
+    background: #030303;
+    padding-bottom: 4rem;
+  }
+
+  .app-bar {
+    position: sticky;
+    top: 0;
+    z-index: 25;
+    padding: 18px;
+    background: #030303;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  .app-bar__icon {
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  .app-bar__cta {
+    border-radius: 18px;
+    padding: 10px 16px;
+    font-size: 12px;
+  }
+
+  .novel-shell {
+    width: min(420px, 100%);
+    margin-top: 20px;
+    padding: 0 16px 40px;
+    gap: 18px;
+  }
+
+  .card {
+    padding: 20px;
+    border-radius: 30px;
+    box-shadow: 0 35px 60px rgba(0, 0, 0, 0.45);
+  }
+
+  .hero-card {
+    border-radius: 36px;
+    padding: 26px 22px;
+    background: linear-gradient(160deg, #1f2042, #111d46 70%);
+  }
+
+  .hero-media {
+    width: 40%;
+    max-width: 140px;
+  }
+
+  .hero-meta {
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .hero-extra {
+    margin-top: 20px;
+    gap: 12px;
+  }
+
+  .hero-meta h1 {
+    font-size: 30px;
+  }
+
+  .stat-badge {
+    /* flex-direction: column;
+    gap: 12px; */
+    padding: 8px;
+  }
+
+  .stat-badge__item {
+    padding: 8px 0;
+    border-right: 1px solid rgba(15, 23, 42, 0.08);
+  }
+
+  .stat-badge__item:last-child {
+    border-right: none;
+  }
+
+  .synopsis .novel-desc-para {
+    font-size: 15px;
+  }
+
+  .group-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+  }
+
+
+  .cta-card {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .cta-card__button {
+    width: 100%;
+    border-radius: 22px;
+    padding: 16px 20px;
+  }
+
+  .pill {
+    background: #3f68ff;
+    color: #fff;
   }
 }

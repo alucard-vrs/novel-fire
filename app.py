@@ -44,7 +44,8 @@ except FileNotFoundError:
             "author": "Kevinascending",
             "total_chapters": 100,  # Set total chapters here
             "source_url": "https://freewebnovel.com/novel/paragon-of-sin",
-            "summary": "The greatest sinner of them all fights the Heavenly Dao itself to grasp destiny."
+            "summary": "The greatest sinner of them all fights the Heavenly Dao itself to grasp destiny.",
+            "tags": [],
         }
     ]
 
@@ -127,6 +128,18 @@ def fetch_novel_metadata(slug_fragment):
         if match:
             total_chapters = int(match.group(1))
 
+    genres = []
+    for item in soup.select(".item"):
+        icon = item.find("span", class_=re.compile("glyphicon"))
+        if not icon:
+            continue
+        classes = " ".join(icon.get("class", []))
+        if "glyphicon-th-list" in classes:
+            right = item.find("div", class_="right")
+            if right:
+                genres = [a.get_text(strip=True) for a in right.select("a") if a.get_text(strip=True)]
+            break
+
     return {
         "title": title,
         "author": author,
@@ -134,6 +147,7 @@ def fetch_novel_metadata(slug_fragment):
         "summary": summary_html,
         "total_chapters": total_chapters,
         "source_url": url,
+        "genres": genres,
     }
 
 
@@ -262,6 +276,7 @@ def add_novel():
         "source_url": metadata.get("source_url"),
         "total_chapters": metadata.get("total_chapters") or 100,
         "summary": metadata.get("summary", ""),
+        "tags": metadata.get("genres") or [],
     }
 
     existing = find_novel(slug_fragment)

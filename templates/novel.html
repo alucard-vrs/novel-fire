@@ -3,7 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    {% set summary_plain = novel.summary | striptags %}
+    {% set last_group = grouped_chapters|last %}
+    {% set total_chapters = novel.total_chapters or (last_group.end if last_group else 0) %}
+    {% set summary_plain = (novel.summary or '') | striptags %}
     <title>{{ novel.title }} | Web Novel Reader</title>
     <meta name="description" content="{{ summary_plain[:155] }}" />
     <link rel="canonical" href="{{ absolute_url(request.path) }}" />
@@ -17,13 +19,14 @@
     <meta name="twitter:description" content="{{ summary_plain[:200] }}" />
     <meta name="twitter:image" content="{{ absolute_url(novel.cover) }}" />
     <link rel="stylesheet" href="/static/css/novel.css" />
+    {% set cover_url = absolute_url(novel.cover or '/static/media/paragon.jpg') %}
     {% set book_data = {
       "@context": "https://schema.org",
       "@type": "Book",
       "name": novel.title,
       "url": absolute_url(request.path),
-      "author": novel.author,
-      "image": absolute_url(novel.cover),
+      "author": novel.author or 'Unknown',
+      "image": cover_url,
       "description": summary_plain,
       "inLanguage": "en",
       "numberOfPages": total_chapters,
@@ -38,26 +41,27 @@
   </head>
   <body class="novel-page">
     {% set first_group = grouped_chapters|first %}
-    {% set last_group = grouped_chapters|last %}
-    {% set total_chapters = novel.total_chapters or (last_group.end if last_group else 0) %}
     {% set derived_tags = novel.get('tags') or (novel.slug.split('-') if novel.slug else []) %}
 
     <header class="app-bar">
       <a href="{{ url_for('homepage') }}" class="app-bar__icon" aria-label="Home">⌂</a>
       <div class="app-bar__title">Detail</div>
-      <span class="app-bar__avatar">✶</span>
+      <a class="app-bar__cta" href="#signin">Sign in</a>
     </header>
 
     <main class="novel-shell">
-      <section class="card hero-card novel-hero">
-        <div class="hero-media">
-          <img src="{{ novel.cover }}" alt="{{ novel.title }}" loading="lazy" decoding="async">
+      <section class="card hero-card">
+        <div class="hero-row">
+          <div class="hero-media">
+            <img src="{{ novel.cover }}" alt="{{ novel.title }}" loading="lazy" decoding="async">
+          </div>
+          <div class="hero-meta">
+            <span class="pill">{{ total_chapters }} Chapters</span>
+            <h1>{{ novel.title }}</h1>
+            <p class="hero-author">by {{ novel.author or 'Unknown' }}</p>
+          </div>
         </div>
-        <div class="hero-meta">
-          <span class="pill">{{ total_chapters }} Chapters</span>
-          <h1>{{ novel.title }}</h1>
-          <p class="hero-author">by {{ novel.author or 'Unknown' }}</p>
-
+        <div class="hero-extra">
           <div class="hero-meta__chips">
             {% for tag in derived_tags[:5] %}
             <span class="tag-chip">#{{ tag.replace('-', ' ')|replace('_', ' ')|title }}</span>
@@ -82,15 +86,15 @@
         </div>
       </section>
 
-      <section class="stat-cards">
-        <article class="stat-card">
-          <span class="stat-label">Views</span>
-          <span class="stat-big">{{ (total_chapters * 500)|int }}</span>
-        </article>
-        <article class="stat-card">
-          <span class="stat-label">Status</span>
-          <span class="stat-big">{{ novel.get('status', 'On-going') }}</span>
-        </article>
+      <section class="stat-badge">
+        <div class="stat-badge__item">
+          <span class="stat-badge__label">Views</span>
+          <span class="stat-badge__value">{{ (total_chapters * 500)|int }}</span>
+        </div>
+        <div class="stat-badge__item">
+          <span class="stat-badge__label">Status</span>
+          <span class="stat-badge__value">{{ novel.get('status', 'On-going') }}</span>
+        </div>
       </section>
 
       {% if novel.summary %}
@@ -113,8 +117,8 @@
               class="group-card"
               href="{{ url_for('read_group', slug=novel.slug, start_chap=group.start) }}"
             >
-              <span>Range</span>
-              <strong>{{ group.start }} - {{ group.end }}</strong>
+              <!-- <span>Range</span> -->
+              <strong>Chapter {{ group.start }} → {{ group.end }}</strong>
             </a>
           </li>
           {% endfor %}
