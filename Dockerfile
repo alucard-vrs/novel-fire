@@ -20,4 +20,4 @@ COPY . .
 EXPOSE 8080
 
 # Start Gunicorn
-CMD ["gunicorn", "-b", "0.0.0.0:8080", "app:app"]
+CMD ["gunicorn", "-b", "0.0.0.0:8000", "app:app"]
