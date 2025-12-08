@@ -323,7 +323,7 @@ def novel_page(slug):
         abort(404)
 
     total_chapters = novel.get("total_chapters", 100)
-    group_size = 50
+    group_size = 30
 
     grouped_chapters = [
         {"start": i, "end": min(i + group_size - 1, total_chapters)}
@@ -350,7 +350,7 @@ def read_group(slug, start_chap):
         abort(404)
 
     total_chapters = novel.get("total_chapters", 100)
-    group_size = 10
+    group_size = 30
     end_chap = min(start_chap + group_size - 1, total_chapters)
 
     chapter_numbers = list(range(start_chap, end_chap + 1))
