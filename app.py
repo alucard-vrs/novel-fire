@@ -16,6 +16,7 @@ import os
 import re
 from urllib.parse import urlparse, urljoin
 from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev-secret-key")
@@ -44,12 +45,14 @@ except FileNotFoundError:
             "author": "Kevinascending",
             "total_chapters": 100,  # Set total chapters here
             "source_url": "https://freewebnovel.com/novel/paragon-of-sin",
-            "summary": "The greatest sinner of them all fights the Heavenly Dao itself to grasp destiny."
+            "summary": "The greatest sinner of them all fights the Heavenly Dao itself to grasp destiny.",
+            "tags": [],
         }
     ]
 
 # --- Cache (for chapters, 1 day) ---
 cache = TTLCache(maxsize=200, ttl=86400)
+FETCH_POOL = ThreadPoolExecutor(max_workers=6)
 
 
 def absolute_url(path: str) -> str:
@@ -127,6 +130,18 @@ def fetch_novel_metadata(slug_fragment):
         if match:
             total_chapters = int(match.group(1))
 
+    genres = []
+    for item in soup.select(".item"):
+        icon = item.find("span", class_=re.compile("glyphicon"))
+        if not icon:
+            continue
+        classes = " ".join(icon.get("class", []))
+        if "glyphicon-th-list" in classes:
+            right = item.find("div", class_="right")
+            if right:
+                genres = [a.get_text(strip=True) for a in right.select("a") if a.get_text(strip=True)]
+            break
+
     return {
         "title": title,
         "author": author,
@@ -134,7 +149,29 @@ def fetch_novel_metadata(slug_fragment):
         "summary": summary_html,
         "total_chapters": total_chapters,
         "source_url": url,
+        "genres": genres,
     }
+
+
+def fetch_chapter_remote(slug, chapter_number):
+    url = f"https://freewebnovel.com/novel/{slug}/chapter-{chapter_number}"
+    headers = {"User-Agent": "Mozilla/5.0"}
+    try:
+        r = requests.get(url, headers=headers, timeout=10)
+        r.raise_for_status()
+    except Exception as e:
+        print(f"⚠️ Failed to fetch chapter {chapter_number}: {e}")
+        return None
+
+    soup = BeautifulSoup(r.text, "html.parser")
+    title_tag = soup.select_one("h1")
+    content_tag = soup.select_one(".chapter-content") or soup.select_one(".txt") or soup.select_one(".content")
+    if not title_tag or not content_tag:
+        return None
+
+    title = title_tag.get_text(strip=True)
+    content = content_tag.decode_contents()
+    return title, content
 
 
 def ensure_cover_image(cover_url, slug_fragment):
@@ -262,6 +299,7 @@ def add_novel():
         "source_url": metadata.get("source_url"),
         "total_chapters": metadata.get("total_chapters") or 100,
         "summary": metadata.get("summary", ""),
+        "tags": metadata.get("genres") or [],
     }
 
     existing = find_novel(slug_fragment)
@@ -315,33 +353,30 @@ def read_group(slug, start_chap):
     group_size = 10
     end_chap = min(start_chap + group_size - 1, total_chapters)
 
-    chapters_content = []
+    chapter_numbers = list(range(start_chap, end_chap + 1))
+    chapter_results = {}
+    futures = {}
 
-    for chapter_number in range(start_chap, end_chap + 1):
+    for chapter_number in chapter_numbers:
         cache_key = f"{slug}_{chapter_number}"
         if cache_key in cache:
-            title, content = cache[cache_key]
+            chapter_results[chapter_number] = cache[cache_key]
         else:
-            url = f"https://freewebnovel.com/novel/{slug}/chapter-{chapter_number}"
-            headers = {"User-Agent": "Mozilla/5.0"}
-            try:
-                r = requests.get(url, headers=headers, timeout=10)
-                r.raise_for_status()
-            except Exception as e:
-                print(f"⚠️ Failed to fetch chapter {chapter_number}: {e}")
-                continue
+            futures[FETCH_POOL.submit(fetch_chapter_remote, slug, chapter_number)] = (cache_key, chapter_number)
 
-            soup = BeautifulSoup(r.text, "html.parser")
-            title_tag = soup.select_one("h1")
-            content_tag = soup.select_one(".chapter-content") or soup.select_one(".txt") or soup.select_one(".content")
-            if not title_tag or not content_tag:
-                continue
+    for future in as_completed(futures):
+        cache_key, chapter_number = futures[future]
+        data = future.result()
+        if not data:
+            continue
+        cache[cache_key] = data
+        chapter_results[chapter_number] = data
 
-            title = title_tag.get_text(strip=True)
-            content = content_tag.decode_contents()
-            cache[cache_key] = (title, content)
-
-        chapters_content.append({"title": title, "content": content})
+    chapters_content = []
+    for chapter_number in chapter_numbers:
+        if chapter_number in chapter_results:
+            title, content = chapter_results[chapter_number]
+            chapters_content.append({"title": title, "content": content})
 
     prev_group = start_chap - group_size if start_chap - group_size > 0 else None
     next_group = start_chap + group_size if start_chap + group_size <= total_chapters else None

@@ -1,0 +1,12 @@
+services:
+  - name: novel-reader
+    type: web
+    env:
+      FLASK_SECRET_KEY: "${FLASK_SECRET_KEY}"
+      SITE_BASE_URL: "${SITE_BASE_URL}"
+    instances: 1
+    ports:
+      - internal_port: 8080
+        protocol: http
+    build:
+      dockerfile: Dockerfile
