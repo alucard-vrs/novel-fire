@@ -285,7 +285,7 @@ def novel_page(slug):
         abort(404)
 
     total_chapters = novel.get("total_chapters", 100)
-    group_size = 10
+    group_size = 50
 
     grouped_chapters = [
         {"start": i, "end": min(i + group_size - 1, total_chapters)}
